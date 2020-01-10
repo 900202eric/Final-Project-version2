@@ -33,8 +33,6 @@ const int RESERVE_SAMPLES = 4;
 enum {
     SCENE_MENU = 1,
     SCENE_START = 2,
-    // [HACKATHON 3-7]
-    // TODO: Declare a new scene id.
     SCENE_SETTINGS = 3,
     SCENE_GAMEOVER = 4,
     SCENE_SELECT = 5,
@@ -64,13 +62,13 @@ ALLEGRO_TIMER* game_update_timer;
 
 ALLEGRO_FONT* font_pirulen_32;
 ALLEGRO_FONT* font_pirulen_24;
-// TODO: More shared resources or data that needed to be accessed
-// across different scenes.
+double bgm_volume = 1.0, sound_volume = 1.0;
+// use variable to store volume state
+double bgm_cursor_x = 0.0;
+double sound_cursor_x = 0.0;
 
 /* Menu Scene resources*/
 ALLEGRO_BITMAP* main_img_background;
-// [HACKATHON 3-1]
-// TODO: Declare 2 variables for storing settings images.
 ALLEGRO_BITMAP* img_settings;
 ALLEGRO_BITMAP* img_settings2;
 ALLEGRO_BITMAP* img_ranking;
@@ -815,18 +813,8 @@ void game_draw(void) {
         //al_draw_bitmap(setting_background, 0, 0, 0);
         al_draw_bitmap(setting_img_return, 10, 10, 0);
         al_draw_text(font_pirulen_32, al_map_rgb(255, 255, 255), SCREEN_W / 2, 30, ALLEGRO_ALIGN_CENTER, "Setting");
-        al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2-150, 100, ALLEGRO_ALIGN_CENTER, "Mouse Control");
-        /*if(mouse_control){
-         if (pnt_in_rect(mouse_x, mouse_y, SCREEN_W/2 + 150, 100, 100, 50) && mouse_control)
-         al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2+200, 100, ALLEGRO_ALIGN_CENTER, "OFF");
-         else
-         al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2+200, 100, ALLEGRO_ALIGN_CENTER, "ON");
-         } else {
-         if (pnt_in_rect(mouse_x, mouse_y, SCREEN_W/2 + 150, 100, 100, 50) && !mouse_control)
-         al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2+200, 100, ALLEGRO_ALIGN_CENTER, "ON");
-         else
-         al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2+200, 100, ALLEGRO_ALIGN_CENTER, "OFF");
-         }*/
+        /* mouse control*/
+        al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), 50, 100, ALLEGRO_ALIGN_LEFT, "Mouse Control");
         if(mouse_control){
             al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2+150, 100, ALLEGRO_ALIGN_CENTER, "ON");
             al_draw_text(font_pirulen_24, al_map_rgb(50, 50, 50), SCREEN_W / 2+220, 100, ALLEGRO_ALIGN_CENTER, "OFF");
@@ -834,6 +822,27 @@ void game_draw(void) {
             al_draw_text(font_pirulen_24, al_map_rgb(50, 50, 50), SCREEN_W / 2+150, 100, ALLEGRO_ALIGN_CENTER, "ON");
             al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W / 2+220, 100, ALLEGRO_ALIGN_CENTER, "OFF");
         }
+        
+        /* bgm control*/
+        bgm_cursor_x = 350 + (750-350)/2 * bgm_volume;
+        if(bgm_volume){
+            al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), 50, 155, ALLEGRO_ALIGN_LEFT, "BGM Volume");
+        } else{
+            al_draw_text(font_pirulen_24, al_map_rgb(150, 150, 150), 50, 155, ALLEGRO_ALIGN_LEFT, "BGM Volume");
+        }
+        al_draw_line(350, 172, 750, 172, al_map_rgb(255, 255, 255), 6.5);
+        al_draw_line(bgm_cursor_x-10, 172, bgm_cursor_x+10, 172, al_map_rgb(255, 0, 0), 30);
+        
+        /* sound control*/
+        sound_cursor_x = 350 + (750-350)/2 * sound_volume;
+        if(sound_volume){
+            al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), 50, 210, ALLEGRO_ALIGN_LEFT, "Sound Volume");
+        } else{
+            al_draw_text(font_pirulen_24, al_map_rgb(150, 150, 150), 50, 210, ALLEGRO_ALIGN_LEFT, "Sound Volume");
+        }
+        al_draw_line(350, 226, 750, 226, al_map_rgb(255, 255, 255), 6.5);
+        al_draw_line(sound_cursor_x-10, 226, sound_cursor_x+10, 226, al_map_rgb(255, 0, 0), 30);
+        
     }
     else if (active_scene == SCENE_GAMEOVER) {
         al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -890,6 +899,7 @@ void game_destroy(void) {
     // Uncomment and fill in the code below.
     al_destroy_bitmap(img_settings);
     al_destroy_bitmap(img_settings2);
+    al_destroy_bitmap(img_ranking);
     
     /* Start Scene resources*/
     al_destroy_bitmap(start_img_background);
@@ -942,7 +952,7 @@ void game_change_scene(int next_scene) {
         }
         printf("\n======================END========================\n");
         
-        if (!al_play_sample(main_bgm, 1, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &main_bgm_id))
+        if (!al_play_sample(main_bgm, bgm_volume, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &main_bgm_id))
             game_abort("failed to play audio (bgm)");
     } else if (active_scene == SCENE_START) {
         int i;
@@ -1023,7 +1033,7 @@ void game_change_scene(int next_scene) {
             }
         }
         
-        if (!al_play_sample(start_bgm, 1, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &start_bgm_id))
+        if (!al_play_sample(start_bgm, bgm_volume, 0.0, 1.0, ALLEGRO_PLAYMODE_LOOP, &start_bgm_id))
             game_abort("failed to play audio (bgm)");
     } else if(active_scene == SCENE_GAMEOVER){
         rewind(fp);
@@ -1243,6 +1253,42 @@ void on_mouse_down(int btn, int x, int y) {
             if(pnt_in_rect(x, y, SCREEN_W/2 + 125, 100, 200, 50)){
                 mouse_control = !mouse_control;
                 game_log("Change mouse control");
+            }
+            
+            /* mute*/
+            if(pnt_in_rect(x, y, 50, 166, 230, 20)){
+                if(bgm_volume){
+                    bgm_cursor_x = 350;
+                    bgm_volume = (bgm_cursor_x-350)/400 * 2.0;
+                } else {
+                    bgm_cursor_x = 550;
+                    bgm_volume = (bgm_cursor_x-350)/400 * 2.0;
+                }
+                game_log("Change BGM volume to %.3ff", bgm_volume);
+            }
+            
+            if(pnt_in_rect(x, y, 350, 166, 400, 20)){
+                bgm_cursor_x = mouse_x;
+                bgm_volume = (bgm_cursor_x-350)/400 * 2.0;
+                game_log("Change BGM volume to %.3ff", bgm_volume);
+            }
+            
+            /* mute*/
+            if(pnt_in_rect(x, y, 50, 210, 270, 20)){
+                if(sound_volume){
+                    sound_cursor_x = 350;
+                    sound_volume = (sound_cursor_x-350)/400 * 2.0;
+                } else {
+                    sound_cursor_x = 550;
+                    sound_volume = (sound_cursor_x-350)/400 * 2.0;
+                }
+                game_log("Change Sound volume to %.3ff", sound_volume);
+            }
+            
+            if(pnt_in_rect(x, y, 350, 210, 400, 20)){
+                sound_cursor_x = mouse_x;
+                sound_volume = (sound_cursor_x-350)/400 * 2.0;
+                game_log("Change Sound volume to %.3ff", sound_volume);
             }
         }
         return;
