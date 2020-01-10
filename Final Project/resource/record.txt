@@ -1,6 +1,7 @@
 ALLEGRO 5 SCORE RECORD
-Record Total: 3
+Record Total: 4
 NO.| Name  | Score
 01 | EricH | 19100
 02 | CHEN  | 00100
-03 | ACC   | 00000
+03 | AA    | 00020
+04 | ACC   | 00000

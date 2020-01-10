@@ -37,7 +37,8 @@ enum {
     // TODO: Declare a new scene id.
     SCENE_SETTINGS = 3,
     SCENE_GAMEOVER = 4,
-    SCENE_SELECT = 5
+    SCENE_SELECT = 5,
+    SCENE_RANKING = 6
 };
 
 /* Input states */
@@ -72,6 +73,7 @@ ALLEGRO_BITMAP* main_img_background;
 // TODO: Declare 2 variables for storing settings images.
 ALLEGRO_BITMAP* img_settings;
 ALLEGRO_BITMAP* img_settings2;
+ALLEGRO_BITMAP* img_ranking;
 ALLEGRO_SAMPLE* main_bgm;
 ALLEGRO_SAMPLE_ID main_bgm_id;
 
@@ -324,6 +326,11 @@ void game_init(void) {
     img_settings2 = al_load_bitmap("resource/settings2.png");
     if (!img_settings2)
         game_abort("failed to load image: settings2.png");
+    
+    img_ranking = load_bitmap_resized("resource/champion.png", 50, 50);
+    if(!img_ranking){
+        game_abort("failed to load image: champion.png");
+    }
     
     /* Start Scene resources*/
     start_img_background = load_bitmap_resized("resource/start-bg.jpg", SCREEN_W, SCREEN_H);
@@ -737,11 +744,9 @@ void game_draw(void) {
         al_draw_bitmap(main_img_background, 0, 0, 0);
         al_draw_text(font_pirulen_32, al_map_rgb(255, 255, 255), SCREEN_W / 2, 30, ALLEGRO_ALIGN_CENTER, "Space Shooter");
         al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), 20, SCREEN_H - 50, 0, "Press enter key to start");
-        // [HACKATHON 3-5]
-        // TODO: Draw settings images.
-        // The settings icon should be located at (x, y, w, h) =
-        // (SCREEN_W - 48, 10, 38, 38).
-        // Change its image according to your mouse position.
+        al_draw_bitmap(img_ranking, SCREEN_W-70, SCREEN_H-70, 0);
+        
+        //setting mouse trigger
         if (pnt_in_rect(mouse_x, mouse_y, SCREEN_W-48, 10, 38, 38))
             al_draw_bitmap(img_settings2, SCREEN_W-48, 10, 0);
         else
@@ -854,6 +859,18 @@ void game_draw(void) {
         if(pnt_in_rect(mouse_x, mouse_y, SCREEN_W/2-100, SCREEN_H/2+100, 450, 50)){
             al_draw_textf(font_pirulen_24, al_map_rgb(255, 255, 255), SCREEN_W/2+150, SCREEN_H/2+100, ALLEGRO_ALIGN_CENTER, "%s",player_name);
         }
+    }
+    else if(active_scene == SCENE_RANKING){
+        al_clear_to_color(al_map_rgb(0, 0, 0));
+        al_draw_text(font_pirulen_32, al_map_rgb(255, 255, 255), SCREEN_W/2, 20, ALLEGRO_ALIGN_CENTER, "RANKING");
+        al_draw_text(font_pirulen_24, al_map_rgb(220, 220, 220), SCREEN_W/2, 70, ALLEGRO_ALIGN_CENTER, "NO.| NAME | SCORE");
+        for(int a=0;a<total_record;a++){
+            if(a==10){
+                break;
+            }
+            al_draw_textf(font_pirulen_24, al_map_rgb(220, 220, 220), SCREEN_W/2, 120+50*a, ALLEGRO_ALIGN_CENTER, "%2d   %6s   %05d", record_struct_array[a].no, record_struct_array[a].name, record_struct_array[a].score);
+        }
+        al_draw_text(font_pirulen_24, al_map_rgb(255, 255, 255), 20, SCREEN_H - 50, 0, "Press enter key to back to menu");
     }
     al_flip_display();
 }
@@ -1031,6 +1048,22 @@ void game_change_scene(int next_scene) {
         if (fflush(fp) != 0)
             printf("Error store file\n");
         printf("\n======================END========================\n");
+    } else if(active_scene == SCENE_RANKING){
+        //read the record file
+        rewind(fp);
+        printf("======Reading Record.txt to Load the Record======\n\n");
+        total_record = 0;
+        fscanf(fp, "ALLEGRO 5 SCORE RECORD\n");
+        printf("ALLEGRO 5 SCORE RECORD\n");
+        fscanf(fp, "Record Total: %d\n",&total_record);
+        printf("Record Total: %d\n",total_record);
+        fscanf(fp, "NO.| Name  | Score\n");
+        printf("NO.| Name  | Score\n");
+        for(int aa=0;aa<total_record;aa++){
+            fscanf(fp, "%d | %s | %d\n", &record_struct_array[aa].no, record_struct_array[aa].name, &record_struct_array[aa].score);
+            printf("%02d | %-5s | %05d\n", record_struct_array[aa].no, record_struct_array[aa].name, record_struct_array[aa].score);
+        }
+        printf("\n======================END========================\n");
     }
 }
 
@@ -1167,6 +1200,10 @@ void on_key_down(int keycode) {
         if(keycode == ALLEGRO_KEY_ENTER)
             game_change_scene(SCENE_MENU);
     }
+    if (active_scene == SCENE_RANKING){
+        if(keycode == ALLEGRO_KEY_ENTER)
+            game_change_scene(SCENE_MENU);
+    }
 }
 
 void on_mouse_down(int btn, int x, int y) {
@@ -1175,6 +1212,10 @@ void on_mouse_down(int btn, int x, int y) {
         if (btn == mouse_state[1]) {
             if (pnt_in_rect(x, y, SCREEN_W-48, 10, 38, 38))
                 game_change_scene(SCENE_SETTINGS);
+        }
+        if (btn == mouse_state[1]) {
+            if (pnt_in_rect(x, y, SCREEN_W-70, SCREEN_H-70, 65, 65))
+                game_change_scene(SCENE_RANKING);
         }
     }
     
