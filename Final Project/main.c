@@ -89,6 +89,7 @@ ALLEGRO_BITMAP* img_enemy_bullets;
 /* Setting Scene resources*/
 ALLEGRO_BITMAP* setting_img_return;
 ALLEGRO_BITMAP* setting_background;
+FILE *settingfp;
 
 typedef struct {
     // The center coordinate of the image.
@@ -159,7 +160,7 @@ typedef struct{
 record_source record_struct_array[100];
 bool name_editing = false;
 int name_edit_position;
-char player_name[30]={'e', 'n', 't', 'e', 'r', ' ', 'n', 'a', 'm', 'e', ' ', 'f', 'o', 'r', '5',' ', 'c', 'h', 'a', 'r', '\0'};
+char player_name[30]={'e', 'n', 't', 'e', 'r', ' ', 'n', 'a', 'm', 'e', ' ', 'f', 'o', 'r', ' ','5',' ', 'c', 'h', 'a', 'r', '\0'};
 
 /* declare the compare record function*/
 int compare(const void *, const void *);
@@ -218,10 +219,15 @@ void game_log(const char* format, ...);
 void game_vlog(const char* format, va_list arg);
 
 int main(int argc, char** argv) {
-    // Set random seed for better random outcome.
+    //Fopen the record.txt
     if ((fp = fopen("./resource/record.txt", "r+")) == NULL) {
         perror("Error: ");
         game_abort("failed to load file: record.txt");
+    }
+    //Fopen the setting.txt
+    if ((settingfp = fopen("./resource/setting.txt", "r+")) == NULL) {
+        perror("Error: ");
+        game_abort("failed to load file: setting.txt");
     }
     srand((int)time(NULL));
     allegro5_init();
@@ -237,7 +243,9 @@ int main(int argc, char** argv) {
     game_start_event_loop();
     game_log("Game end");
     fclose(fp);
+    fclose(settingfp);
     fp = NULL;
+    settingfp = NULL;
     game_destroy();
     return 0;
 }
@@ -930,6 +938,33 @@ void game_change_scene(int next_scene) {
     } else if (active_scene == SCENE_START) {
         al_stop_sample(&start_bgm_id);
         game_log("stop audio (bgm)");
+    } else if (active_scene ==SCENE_SETTINGS) {
+        //read the record file
+        rewind(settingfp);
+        printf("======Reading Setting.txt to Load the Record======\n\n");
+        fprintf(settingfp, "ALLEGRO 5 SETTING TXET\n");
+        printf("ALLEGRO 5 SETTING TEXT\n");
+        fprintf(settingfp, "(1 is TRUE || 0 is FALSE)\n");
+        printf("(1 is TRUE || 0 is FALSE)\n");
+        fprintf(settingfp, "(Other for its value)\n");
+        printf("(Other for its value)\n");
+        fprintf(settingfp, "======================\n");
+        printf("======================\n");
+        int mouse_control_insetting;
+        if(mouse_control){
+            mouse_control_insetting = 1;
+        } else{
+            mouse_control_insetting = 0;
+        }
+        fprintf(settingfp, " 1 | Mouse_Control | %d\n", mouse_control_insetting);
+        printf(" 1 | Mouse_Control | %d\n", mouse_control_insetting);
+        fprintf(settingfp, " 2 | BGM_Volume    | %.3f\n", bgm_volume);
+        printf(" 2 | BGM_Volume    | %.3f\n", bgm_volume);
+        fprintf(settingfp, " 3 | Sound_Volume  | %.3f\n", sound_volume);
+        printf(" 3 | Sound_Volume  | %.3f\n", sound_volume);
+        printf("\n======================END=========================\n");
+        if (fflush(settingfp) != 0)
+            printf("Error store file\n");
     }
     
     active_scene = next_scene;
@@ -1074,6 +1109,31 @@ void game_change_scene(int next_scene) {
             printf("%02d | %-5s | %05d\n", record_struct_array[aa].no, record_struct_array[aa].name, record_struct_array[aa].score);
         }
         printf("\n======================END========================\n");
+    } else if(active_scene == SCENE_SETTINGS){
+        //read the record file
+        rewind(settingfp);
+        printf("======Reading Setting.txt to Load the Record======\n\n");
+        fscanf(settingfp, "ALLEGRO 5 SETTING TXET\n");
+        printf("ALLEGRO 5 SETTING TEXT\n");
+        fscanf(settingfp, "(1 is TRUE || 0 is FALSE)\n");
+        printf("(1 is TRUE || 0 is FALSE)\n");
+        fscanf(settingfp, "(Other for its value)\n");
+        printf("(Other for its value)\n");
+        fscanf(settingfp, "======================\n");
+        printf("======================\n");
+        int mouse_control_insetting;
+        fscanf(settingfp, " 1 | Mouse_Control | %d\n", &mouse_control_insetting);
+        if(mouse_control_insetting){
+            mouse_control = true;
+        } else{
+            mouse_control = false;
+        }
+        printf(" 1 | Mouse_Control | %d\n", mouse_control_insetting);
+        fscanf(settingfp, " 2 | BGM_Volume    | %lf\n", &bgm_volume);
+        printf(" 2 | BGM_Volume    | %.3f\n", bgm_volume);
+        fscanf(settingfp, " 3 | Sound_Volume  | %lf\n", &sound_volume);
+        printf(" 3 | Sound_Volume  | %.3f\n", sound_volume);
+        printf("\n======================END=========================\n");
     }
 }
 

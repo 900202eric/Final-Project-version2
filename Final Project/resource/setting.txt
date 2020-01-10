@@ -1,0 +1,7 @@
+ALLEGRO 5 SETTING TXET
+(1 is TRUE || 0 is FALSE)
+(Other for its value)
+======================
+ 1 | Mouse_Control | 0
+ 2 | BGM_Volume    | 1.995
+ 3 | Sound_Volume  | 1.990
